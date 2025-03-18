@@ -1,49 +1,43 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_HUB_REPO = 'pradeep1803/my-node-app'
-        AWS_REGION = 'us-east-1'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        GITHUB_TOKEN = credentials('github-token')
     }
-
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                git credentialsId: 'github-creds', url: 'https://github.com/pradeep1803/DevOps-C-Lab'
+                git credentialsId: 'github-token', url: 'https://github.com/kgmimsdevops/DevOps-C-Lab.git'
             }
         }
-
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_HUB_REPO:latest .'
+                sh 'docker build -t my-node-app .'
             }
         }
-
         stage('Push to Docker Hub') {
             steps {
-                withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
-                    sh 'docker push $DOCKER_HUB_REPO:latest'
-                }
-            }
-        }
-
-        stage('Deploy with Terraform and Ansible') {
-            steps {
                 sh '''
-                cd terraform
-                terraform init
-                terraform apply -auto-approve
-                
-                cd ../ansible
-                ansible-playbook -i inventory deploy.yml
+                echo $DOCKERHUB_CREDENTIALS | docker login -u your-dockerhub-username --password-stdin
+                docker tag my-node-app your-dockerhub-username/my-node-app:latest
+                docker push your-dockerhub-username/my-node-app:latest
                 '''
             }
         }
-
-        stage('Notify on Success') {
+        stage('Deploy to EC2') {
             steps {
-                sh 'aws sns publish --topic-arn arn:aws:sns:$AWS_REGION:123456789012:BuildNotifications --message "Deployment Successful"'
+                sh '''
+                docker run -d -p 8080:8080 --name my-container your-dockerhub-username/my-node-app:latest
+                '''
+            }
+        }
+        stage('Send Notification') {
+            steps {
+                sh '''
+                aws sns publish --topic-arn arn:aws:sns:region:account-id:topic-name --message "Deployment Successful"
+                '''
             }
         }
     }
 }
+
