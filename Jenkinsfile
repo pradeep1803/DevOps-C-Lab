@@ -2,12 +2,12 @@ pipeline {
     agent any
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        GITHUB_TOKEN = credentials('github-token')
+        GITHUB_TOKEN = credentials('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')
     }
     stages {
         stage('Clone Repository') {
             steps {
-                git credentialsId: 'github-token', url: 'https://github.com/kgmimsdevops/DevOps-C-Lab.git'
+                git credentialsId: 'github-token', url: 'https://github.com/pradeep1803/DevOps-C-Lab'
             }
         }
         stage('Build Docker Image') {
@@ -19,15 +19,15 @@ pipeline {
             steps {
                 sh '''
                 echo $DOCKERHUB_CREDENTIALS | docker login -u your-dockerhub-username --password-stdin
-                docker tag my-node-app your-dockerhub-username/my-node-app:latest
-                docker push your-dockerhub-username/my-node-app:latest
+                docker tag my-node-app pradeep1803/my-node-app:latest
+                docker push pradeep1803/my-node-app:latest
                 '''
             }
         }
         stage('Deploy to EC2') {
             steps {
                 sh '''
-                docker run -d -p 8080:8080 --name my-container your-dockerhub-username/my-node-app:latest
+                docker run -d -p 8080:8080 --name my-container pradeep1803/my-node-app:latest
                 '''
             }
         }
